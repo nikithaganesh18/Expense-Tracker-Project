@@ -81,7 +81,7 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-TATIC_URL = "/static/"
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR.parent / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -93,7 +93,7 @@ LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
+AWS_REGION = os.getenv("AWS_REGION", "eu-west-1")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "expense-tracker-bills-nikitha")
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

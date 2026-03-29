@@ -10,63 +10,96 @@ env:
 
 jobs:
   ci:
+    name: Continuous Integration
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 1. Checkout source code
+        uses: actions/checkout@v4
 
-      - name: Debug structure
+      - name: 2. Show project structure
         run: |
           pwd
           ls -la
-          ls -la expense_tracker
+          ls -la "$APP_DIR"
+          find . -maxdepth 4 -type f | sort
 
-      - uses: actions/setup-python@v5
+      - name: 3. Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.9"
 
-      - name: Install deps
+      - name: 4. Install project dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r expense_tracker/requirements.txt
+          pip install -r "$APP_DIR/requirements.txt"
           pip install coverage pip-audit
 
-      - name: Security Scan
-        run: pip-audit -r expense_tracker/requirements.txt
+      - name: 5. Run security scan
+        run: |
+          pip-audit -r "$APP_DIR/requirements.txt"
         continue-on-error: true
 
-      - name: Django Check
+      - name: 6. Run Django system check
+        env:
+          DJANGO_SECRET_KEY: test-secret-key
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost,http://127.0.0.1
+          AWS_REGION: eu-west-1
+          AWS_STORAGE_BUCKET_NAME: expense-tracker-bills-nikitha
         run: |
-          cd expense_tracker
+          cd "$APP_DIR"
           python manage.py check
 
-      - name: Tests
+      - name: 7. Run automated tests with coverage
+        env:
+          DJANGO_SECRET_KEY: test-secret-key
+          DJANGO_DEBUG: "False"
+          DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+          DJANGO_CSRF_TRUSTED_ORIGINS: http://localhost,http://127.0.0.1
+          AWS_REGION: eu-west-1
+          AWS_STORAGE_BUCKET_NAME: expense-tracker-bills-nikitha
         run: |
-          cd expense_tracker
+          cd "$APP_DIR"
           coverage run manage.py test
           coverage xml
+          coverage report
+
+      - name: 8. Run SonarCloud analysis
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: expense_tracker
 
   cd:
+    name: Continuous Deployment
     runs-on: ubuntu-latest
     needs: ci
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 1. Checkout source code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: 2. Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.9"
 
-      - name: Build Docker
+      - name: 3. Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/expense-tracker:latest ./expense_tracker
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/expense-tracker:latest "$APP_DIR"
 
-      - name: Push Docker
+      - name: 4. Log in to Docker Hub
         run: |
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: 5. Push Docker image
+        run: |
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/expense-tracker:latest
 
-      - name: Deploy EC2
+      - name: 6. Deploy application to EC2
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -77,3 +110,4 @@ jobs:
             docker compose pull
             docker compose down
             docker compose up -d
+            docker image prune -f

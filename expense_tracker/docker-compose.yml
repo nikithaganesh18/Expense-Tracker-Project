@@ -1,0 +1,13 @@
+services:
+  web:
+    image: anupnandan/expense-tracker:latest
+    container_name: expense_tracker_web
+    restart: always
+    env_file:
+      - .env
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn expense_tracker.wsgi:application --bind 0.0.0.0:8000"
+    ports:
+      - "8000:8000"

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Expenses | Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-label">EXPENSES</p>
+    <h1 class="page-title">Expenses</h1>
+</div>
+
+<div class="panel recent-panel">
+    <div class="expenses-topbar">
+        <div>
+            <h3 class="panel-title">ALL EXPENSES</h3>
+            <p class="stat-subtext">Total: {{ total_amount }}</p>
+        </div>
+
+        <button type="button" class="expense-add-btn" onclick="openExpenseModal()">
+            Add Expense
+        </button>
+    </div>
+
+    <div class="expenses-table-wrap">
+        <table class="expenses-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.title }}</td>
+                    <td>{{ expense.amount }}</td>
+                    <td>{{ expense.category }}</td>
+                    <td>{{ expense.date|date:"F d, Y" }}</td>
+                    <td>{{ expense.description|default:'-' }}</td>
+                    <td>
+<button
+    type="button"
+    class="table-action-btn"
+    onclick="openEditExpenseModal(
+        '{{ expense.id }}',
+        '{{ expense.title|escapejs }}',
+        '{{ expense.amount }}',
+        '{{ expense.category.id }}',
+        '{{ expense.date|date:"Y-m-d" }}',
+        '{{ expense.description|default:''|escapejs }}'
+    )">
+    Edit
+</button>
+
+                        <button
+                            type="button"
+                            class="table-delete-btn"
+                            onclick="openDeleteExpenseModal('{{ expense.id }}', '{{ expense.title|escapejs }}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="empty-row">No expenses added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

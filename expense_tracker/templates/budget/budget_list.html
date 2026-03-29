@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Budget | Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-label">BUDGET</p>
+    <h1 class="page-title">Budget</h1>
+</div>
+
+<div class="panel recent-panel">
+    <div class="expenses-topbar">
+        <div>
+            <h3 class="panel-title">MONTHLY BUDGETS</h3>
+            <p class="stat-subtext">Manage your monthly budget targets</p>
+        </div>
+
+        <button type="button" class="expense-add-btn" onclick="openBudgetModal()">
+            Set Budget
+        </button>
+    </div>
+
+    <div class="expenses-table-wrap">
+        <table class="expenses-table">
+            <thead>
+                <tr>
+                    <th>Month</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for budget in budgets %}
+                <tr>
+                    <td>{{ budget.month|date:"F Y" }}</td>
+                    <td>{{ budget.amount }}</td>
+                    <td>
+                        <button
+                            type="button"
+                            class="table-action-btn"
+                            onclick="openEditBudgetModal('{{ budget.id }}', '{{ budget.month|date:"Y-m-d" }}', '{{ budget.amount }}')">
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="table-delete-btn"
+                            onclick="openDeleteBudgetModal('{{ budget.id }}', '{{ budget.month|date:"F Y" }}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-row">No budget set yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,562 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Expense Tracker{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}?v=7">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="sidebar-logo">Expense Tracker</div>
+            <div class="sidebar-subtitle">Personal finance dashboard</div>
+
+            <nav class="sidebar-nav">
+                <a href="{% url 'dashboard' %}" class="nav-link {% if request.path == '/dashboard/' %}active{% endif %}">
+                    <span class="nav-icon">▣</span>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="{% url 'expense_list' %}" class="nav-link {% if '/expenses' in request.path and '/categories' not in request.path %}active{% endif %}">
+                    <span class="nav-icon">◫</span>
+                    <span>Expenses</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-link {% if '/categories' in request.path %}active{% endif %}">
+                    <span class="nav-icon">◧</span>
+                    <span>Categories</span>
+                </a>
+
+                <a href="{% url 'budget_list' %}" class="nav-link {% if '/budget' in request.path %}active{% endif %}">
+                    <span class="nav-icon">▤</span>
+                    <span>Budget</span>
+                </a>
+                
+                <a href="{% url 'upload_receipt' %}" class="nav-link {% if '/receipts' in request.path %}active{% endif %}">
+                    <span class="nav-icon">🧾</span>
+                    <span>Receipts</span>
+                </a>
+
+                <a href="{% url 'logout' %}" class="nav-link">
+                    <span class="nav-icon">⇦</span>
+                    <span>Logout</span>
+                </a>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Add Expense Modal -->
+    <div id="expenseModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">EXPENSES</p>
+                    <h2 class="modal-title">Add Expense</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeExpenseModal()">×</button>
+            </div>
+
+            <form method="POST" action="{% url 'add_expense' %}" class="expense-modal-form">
+                {% csrf_token %}
+
+                <div class="modal-form-grid">
+                    <div class="modal-form-group">
+                        <label for="modal_title">Title</label>
+                        <input id="modal_title" type="text" name="title" required>
+                    </div>
+
+                    <div class="modal-form-group">
+                        <label for="modal_amount">Amount</label>
+                        <input id="modal_amount" type="number" step="0.01" name="amount" required>
+                    </div>
+
+                    <div class="modal-form-group">
+                        <label for="modal_category">Category</label>
+                        <select id="modal_category" name="category" required>
+                            <option value="">Select category</option>
+                            {% for category in user_categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-form-group">
+                        <label for="modal_date">Date</label>
+                        <input id="modal_date" type="date" name="date" required>
+                    </div>
+                </div>
+
+                <div class="modal-form-group full-width">
+                    <label for="modal_description">Description</label>
+                    <textarea id="modal_description" name="description" rows="4"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeExpenseModal()">Cancel</button>
+                    <button type="submit" class="modal-save-btn">Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Expense Modal -->
+    <div id="editExpenseModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">EXPENSES</p>
+                    <h2 class="modal-title">Edit Expense</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeEditExpenseModal()">×</button>
+            </div>
+
+            <form method="POST" id="editExpenseForm" class="expense-modal-form">
+                {% csrf_token %}
+
+                <div class="modal-form-grid">
+                    <div class="modal-form-group">
+                        <label for="edit_modal_title">Title</label>
+                        <input id="edit_modal_title" type="text" name="title" required>
+                    </div>
+
+                    <div class="modal-form-group">
+                        <label for="edit_modal_amount">Amount</label>
+                        <input id="edit_modal_amount" type="number" step="0.01" name="amount" required>
+                    </div>
+
+                    <div class="modal-form-group">
+                        <label for="edit_modal_category">Category</label>
+                        <select id="edit_modal_category" name="category" required>
+                            {% for category in user_categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="modal-form-group">
+                        <label for="edit_modal_date">Date</label>
+                        <input id="edit_modal_date" type="date" name="date" required>
+                    </div>
+                </div>
+
+                <div class="modal-form-group full-width">
+                    <label for="edit_modal_description">Description</label>
+                    <textarea id="edit_modal_description" name="description" rows="4"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeEditExpenseModal()">Cancel</button>
+                    <button type="submit" class="modal-save-btn">Update Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Expense Modal -->
+    <div id="deleteExpenseModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">EXPENSES</p>
+                    <h2 class="modal-title">Delete Expense</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeDeleteExpenseModal()">×</button>
+            </div>
+
+            <form method="POST" id="deleteExpenseForm">
+                {% csrf_token %}
+                <p class="delete-modal-text">
+                    Are you sure you want to delete
+                    <strong id="deleteExpenseTitle"></strong>?
+                </p>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeDeleteExpenseModal()">Cancel</button>
+                    <button type="submit" class="delete-confirm-btn">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div id="categoryModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">CATEGORIES</p>
+                    <h2 class="modal-title">Add Category</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeCategoryModal()">×</button>
+            </div>
+
+            <form method="POST" action="{% url 'add_category' %}" class="expense-modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group full-width">
+                    <label for="category_name">Category Name</label>
+                    <input id="category_name" type="text" name="name" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeCategoryModal()">Cancel</button>
+                    <button type="submit" class="modal-save-btn">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div id="editCategoryModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">CATEGORIES</p>
+                    <h2 class="modal-title">Edit Category</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeEditCategoryModal()">×</button>
+            </div>
+
+            <form method="POST" id="editCategoryForm" class="expense-modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group full-width">
+                    <label for="edit_category_name">Category Name</label>
+                    <input id="edit_category_name" type="text" name="name" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeEditCategoryModal()">Cancel</button>
+                    <button type="submit" class="modal-save-btn">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Category Modal -->
+    <div id="deleteCategoryModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">CATEGORIES</p>
+                    <h2 class="modal-title">Delete Category</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeDeleteCategoryModal()">×</button>
+            </div>
+
+            <form method="POST" id="deleteCategoryForm">
+                {% csrf_token %}
+                <p class="delete-modal-text">
+                    Are you sure you want to delete
+                    <strong id="deleteCategoryTitle"></strong>?
+                </p>
+                <p id="deleteCategoryWarning" class="stat-subtext" style="margin-bottom: 20px;"></p>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeDeleteCategoryModal()">Cancel</button>
+                    <button type="submit" class="delete-confirm-btn">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Budget Modal -->
+    <div id="budgetModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">BUDGET</p>
+                    <h2 class="modal-title">Set Budget</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeBudgetModal()">×</button>
+            </div>
+
+            <form method="POST" action="{% url 'add_budget' %}" class="expense-modal-form">
+                {% csrf_token %}
+
+                <div class="modal-form-group full-width">
+                    <label for="budget_month">Month</label>
+                    <input id="budget_month" type="date" name="month" required>
+                </div>
+
+                <div class="modal-form-group full-width">
+                    <label for="budget_amount">Amount</label>
+                    <input id="budget_amount" type="number" step="0.01" name="amount" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeBudgetModal()">Cancel</button>
+                    <button type="submit" class="modal-save-btn">Save Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Budget Modal -->
+    <div id="editBudgetModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">BUDGET</p>
+                    <h2 class="modal-title">Edit Budget</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeEditBudgetModal()">×</button>
+            </div>
+
+            <form method="POST" id="editBudgetForm" class="expense-modal-form">
+                {% csrf_token %}
+
+                <div class="modal-form-group full-width">
+                    <label for="edit_budget_month">Month</label>
+                    <input id="edit_budget_month" type="date" name="month" required>
+                </div>
+
+                <div class="modal-form-group full-width">
+                    <label for="edit_budget_amount">Amount</label>
+                    <input id="edit_budget_amount" type="number" step="0.01" name="amount" required>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeEditBudgetModal()">Cancel</button>
+                    <button type="submit" class="modal-save-btn">Update Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Budget Modal -->
+    <div id="deleteBudgetModal" class="modal-overlay">
+        <div class="modal-box delete-modal-box">
+            <div class="modal-header">
+                <div>
+                    <p class="modal-label">BUDGET</p>
+                    <h2 class="modal-title">Delete Budget</h2>
+                </div>
+                <button type="button" class="modal-close" onclick="closeDeleteBudgetModal()">×</button>
+            </div>
+
+            <form method="POST" id="deleteBudgetForm">
+                {% csrf_token %}
+                <p class="delete-modal-text">
+                    Are you sure you want to delete budget for
+                    <strong id="deleteBudgetTitle"></strong>?
+                </p>
+
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel-btn" onclick="closeDeleteBudgetModal()">Cancel</button>
+                    <button type="submit" class="delete-confirm-btn">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% else %}
+        {% block full_content %}{% endblock %}
+    {% endif %}
+
+    <script>
+        function openExpenseModal() {
+            const modal = document.getElementById('expenseModal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }
+
+        function closeExpenseModal() {
+            const modal = document.getElementById('expenseModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openEditExpenseModal(id, title, amount, category, date, description) {
+            const modal = document.getElementById('editExpenseModal');
+            const form = document.getElementById('editExpenseForm');
+
+            form.action = `/expenses/edit/${id}/`;
+            document.getElementById('edit_modal_title').value = title;
+            document.getElementById('edit_modal_amount').value = amount;
+            document.getElementById('edit_modal_category').value = category;
+            document.getElementById('edit_modal_date').value = date;
+            document.getElementById('edit_modal_description').value = description || '';
+
+            modal.classList.add('show');
+        }
+
+        function closeEditExpenseModal() {
+            const modal = document.getElementById('editExpenseModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openDeleteExpenseModal(id, title) {
+            const modal = document.getElementById('deleteExpenseModal');
+            const form = document.getElementById('deleteExpenseForm');
+            const titleEl = document.getElementById('deleteExpenseTitle');
+
+            form.action = `/expenses/delete/${id}/`;
+            titleEl.textContent = title;
+
+            modal.classList.add('show');
+        }
+
+        function closeDeleteExpenseModal() {
+            const modal = document.getElementById('deleteExpenseModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openCategoryModal() {
+            const modal = document.getElementById('categoryModal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }
+
+        function closeCategoryModal() {
+            const modal = document.getElementById('categoryModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openEditCategoryModal(id, name) {
+            const modal = document.getElementById('editCategoryModal');
+            const form = document.getElementById('editCategoryForm');
+
+            form.action = `/categories/edit/${id}/`;
+            document.getElementById('edit_category_name').value = name;
+
+            modal.classList.add('show');
+        }
+
+        function closeEditCategoryModal() {
+            const modal = document.getElementById('editCategoryModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openDeleteCategoryModal(id, name, count) {
+            const modal = document.getElementById('deleteCategoryModal');
+            const form = document.getElementById('deleteCategoryForm');
+            const titleEl = document.getElementById('deleteCategoryTitle');
+            const warningEl = document.getElementById('deleteCategoryWarning');
+
+            form.action = `/categories/delete/${id}/`;
+            titleEl.textContent = name;
+
+            if (parseInt(count) > 0) {
+                warningEl.textContent = 'This category has linked expenses. Delete is blocked until those expenses are removed or reassigned.';
+            } else {
+                warningEl.textContent = '';
+            }
+
+            modal.classList.add('show');
+        }
+
+        function closeDeleteCategoryModal() {
+            const modal = document.getElementById('deleteCategoryModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openBudgetModal() {
+            const modal = document.getElementById('budgetModal');
+            if (modal) {
+                modal.classList.add('show');
+            }
+        }
+
+        function closeBudgetModal() {
+            const modal = document.getElementById('budgetModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openEditBudgetModal(id, month, amount) {
+            const modal = document.getElementById('editBudgetModal');
+            const form = document.getElementById('editBudgetForm');
+
+            form.action = `/budget/edit/${id}/`;
+            document.getElementById('edit_budget_month').value = month;
+            document.getElementById('edit_budget_amount').value = amount;
+
+            modal.classList.add('show');
+        }
+
+        function closeEditBudgetModal() {
+            const modal = document.getElementById('editBudgetModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function openDeleteBudgetModal(id, monthLabel) {
+            const modal = document.getElementById('deleteBudgetModal');
+            const form = document.getElementById('deleteBudgetForm');
+            const titleEl = document.getElementById('deleteBudgetTitle');
+
+            form.action = `/budget/delete/${id}/`;
+            titleEl.textContent = monthLabel;
+
+            modal.classList.add('show');
+        }
+
+        function closeDeleteBudgetModal() {
+            const modal = document.getElementById('deleteBudgetModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        window.addEventListener('click', function(event) {
+            [
+                'expenseModal',
+                'editExpenseModal',
+                'deleteExpenseModal',
+                'categoryModal',
+                'editCategoryModal',
+                'deleteCategoryModal',
+                'budgetModal',
+                'editBudgetModal',
+                'deleteBudgetModal'
+            ].forEach(function(id) {
+                const modal = document.getElementById(id);
+                if (modal && event.target === modal) {
+                    modal.classList.remove('show');
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeExpenseModal();
+                closeEditExpenseModal();
+                closeDeleteExpenseModal();
+                closeCategoryModal();
+                closeEditCategoryModal();
+                closeDeleteCategoryModal();
+                closeBudgetModal();
+                closeEditBudgetModal();
+                closeDeleteBudgetModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}Categories | Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-label">CATEGORIES</p>
+    <h1 class="page-title">Categories</h1>
+</div>
+
+<div class="panel recent-panel">
+    <div class="expenses-topbar">
+        <div>
+            <h3 class="panel-title">ALL CATEGORIES</h3>
+            <p class="stat-subtext">Manage your categories</p>
+        </div>
+
+        <button type="button" class="expense-add-btn" onclick="openCategoryModal()">
+            Add Category
+        </button>
+    </div>
+
+    <div class="expenses-table-wrap">
+        <table class="expenses-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Expense Count</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>{{ category.name }}</td>
+                    <td>{{ category.expense_count }}</td>
+                    <td>
+                        <button
+                            type="button"
+                            class="table-action-btn"
+                            onclick="openEditCategoryModal('{{ category.id }}', '{{ category.name|escapejs }}')">
+                            Edit
+                        </button>
+
+                        <button
+                            type="button"
+                            class="table-delete-btn"
+                            onclick="openDeleteCategoryModal('{{ category.id }}', '{{ category.name|escapejs }}', '{{ category.expense_count }}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-row">No categories added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

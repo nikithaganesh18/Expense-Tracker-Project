@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home | Expense Tracker{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block full_content %}
+<div class="home-shell">
+    <header class="hero-header">
+        <div class="brand-wrap">
+            <h2 class="brand-title">Expense Tracker</h2>
+            <p class="brand-subtitle">Personal finance dashboard</p>
+        </div>
+
+        <div class="hero-nav">
+            <a href="/login/" class="nav-login">Login</a>
+            <a href="/register/" class="nav-cta">Get Started</a>
+        </div>
+    </header>
+
+    <main class="hero-main">
+
+        <h1 class="hero-title">
+            Pro Expense<br>Tracker
+        </h1>
+
+        <p class="hero-text">
+            Organize your spending, monitor your budget, and manage your personal finances
+            with a modern cloud-based expense tracker designed for clarity.
+        </p>
+
+        <div class="hero-actions">
+            <a href="/register/" class="btn-primary">Start Free</a>
+            <a href="/login/" class="btn-secondary">Login</a>
+        </div>
+    </main>
+
+    <div class="bg-orb orb-left"></div>
+    <div class="bg-orb orb-right"></div>
+    <div class="grid-overlay"></div>
+    <div class="bottom-glow"></div>
+</div>
+{% endblock %}

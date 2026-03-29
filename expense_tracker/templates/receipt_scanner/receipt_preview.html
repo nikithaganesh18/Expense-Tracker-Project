@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}Receipt Preview | Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-label">RECEIPT SCANNER</p>
+    <h1 class="page-title">Receipt Preview</h1>
+</div>
+
+<div class="content-grid">
+    <div class="panel panel-large">
+        <h3 class="panel-title">EXTRACTED DETAILS</h3>
+
+        <form method="POST" class="expense-modal-form">
+            {% csrf_token %}
+
+            <div class="modal-form-grid">
+                <div class="modal-form-group">
+                    <label for="{{ form.merchant.id_for_label }}">Merchant</label>
+                    {{ form.merchant }}
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="{{ form.amount.id_for_label }}">Amount</label>
+                    {{ form.amount }}
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="{{ form.date.id_for_label }}">Date</label>
+                    {{ form.date }}
+                </div>
+
+                <div class="modal-form-group">
+                    <label for="{{ form.category.id_for_label }}">Category</label>
+                    {{ form.category }}
+                </div>
+            </div>
+
+            <div class="modal-form-group full-width">
+                <label for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="modal-actions" style="justify-content:flex-start;">
+                <button type="submit" class="modal-save-btn">Save as Expense</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="panel panel-small">
+        <h3 class="panel-title">RAW EXTRACTED TEXT</h3>
+        <div class="empty-state" style="height:auto; align-items:flex-start; justify-content:flex-start; text-align:left; white-space:pre-wrap;">
+            {{ receipt.raw_text|default:"No raw text extracted." }}
+        </div>
+    </div>
+</div>
+{% endblock %}

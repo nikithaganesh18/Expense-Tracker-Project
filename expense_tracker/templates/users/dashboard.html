@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard | Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header dashboard-header-row">
+    <div>
+        <p class="page-label">OVERVIEW</p>
+        <h1 class="page-title">Dashboard</h1>
+    </div>
+
+    <button type="button" class="primary-action-btn" onclick="openExpenseModal()">
+        + Add Expense
+    </button>
+</div>
+
+{% if show_welcome %}
+<div id="welcomeToast" class="welcome-toast">
+    Welcome back, {{ request.user.username }} 👋
+</div>
+{% endif %}
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-heading">THIS MONTH</span>
+            <span class="stat-mini-icon">$</span>
+        </div>
+        <h2 class="stat-value">{{ this_month }}</h2>
+        <p class="stat-subtext">{{ expense_count }} expenses</p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-heading">LAST MONTH</span>
+            <span class="stat-mini-icon">↘</span>
+        </div>
+        <h2 class="stat-value">{{ last_month }}</h2>
+        <p class="stat-subtext">&nbsp;</p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-heading">BUDGET USED</span>
+            <span class="stat-mini-icon">▣</span>
+        </div>
+        <h2 class="stat-value budget-text">{{ budget_used }}</h2>
+        <p class="stat-subtext">Current month budget status</p>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-heading">ALL TIME</span>
+            <span class="stat-mini-icon">$</span>
+        </div>
+        <h2 class="stat-value">{{ all_time }}</h2>
+        <p class="stat-subtext">&nbsp;</p>
+    </div>
+</div>
+
+<div class="content-grid">
+    <div class="panel panel-large">
+        <h3 class="panel-title">MONTHLY TREND</h3>
+        <div class="chart-box">
+            <canvas id="monthlyTrendChart"></canvas>
+        </div>
+    </div>
+
+    <div class="panel panel-small">
+        <h3 class="panel-title">BY CATEGORY</h3>
+        {% if category_data %}
+            <div class="chart-box small-chart-box">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        {% else %}
+            <div class="empty-state">No expenses this month</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="panel progress-panel">
+    <h3 class="panel-title">BUDGET PROGRESS</h3>
+
+    {% if budget_amount %}
+        <div class="budget-progress-top">
+            <span class="budget-progress-text">{{ budget_used_amount }} used</span>
+            <span class="budget-progress-text">Budget {{ budget_amount }}</span>
+        </div>
+
+        <div class="budget-progress-bar">
+            <div class="budget-progress-fill" style="width: {{ budget_percentage }}%;"></div>
+        </div>
+
+        <p class="stat-subtext" style="margin-top: 14px;">{{ budget_percentage }}% of this month's budget used</p>
+    {% else %}
+        <div class="empty-state" style="height: 120px;">No budget set for this month</div>
+    {% endif %}
+</div>
+
+<script>
+    const monthlyLabels = {{ monthly_labels|safe }};
+    const monthlyData = {{ monthly_data|safe }};
+    const categoryLabels = {{ category_labels|safe }};
+    const categoryData = {{ category_data|safe }};
+
+    const monthlyCtx = document.getElementById('monthlyTrendChart');
+    if (monthlyCtx) {
+        new Chart(monthlyCtx, {
+            type: 'line',
+            data: {
+                labels: monthlyLabels,
+                datasets: [{
+                    label: 'Expenses',
+                    data: monthlyData,
+                    borderColor: '#ffffff',
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#9aa4b2'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.05)'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            color: '#9aa4b2'
+                        },
+                        grid: {
+                            color: 'rgba(255,255,255,0.05)'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const categoryCtx = document.getElementById('categoryChart');
+    if (categoryCtx && categoryData.length > 0) {
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: categoryLabels,
+                datasets: [{
+                    data: categoryData,
+                    backgroundColor: [
+                        '#ffffff',
+                        '#8ab4ff',
+                        '#7c5cff',
+                        '#4dd4ac',
+                        '#ff8d8d',
+                        '#ffd166'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#dce3ef'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const toast = document.getElementById('welcomeToast');
+    if (toast) {
+        setTimeout(() => {
+            toast.remove();
+        }, 1200);
+    }
+</script>
+{% endblock %}

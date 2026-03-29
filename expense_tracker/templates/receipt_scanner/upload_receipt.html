@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Receipt | Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="page-label">RECEIPT SCANNER</p>
+    <h1 class="page-title">Upload Receipt</h1>
+</div>
+
+<div class="panel recent-panel">
+    <h3 class="panel-title">UPLOAD BILL OR RECEIPT</h3>
+
+    <form method="POST" enctype="multipart/form-data" class="expense-modal-form">
+        {% csrf_token %}
+
+        <div class="modal-form-group full-width">
+            <label for="{{ form.file.id_for_label }}">Receipt File</label>
+            {{ form.file }}
+        </div>
+
+        <div class="modal-actions" style="justify-content:flex-start;">
+            <button type="submit" class="modal-save-btn">Extract Receipt Data</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

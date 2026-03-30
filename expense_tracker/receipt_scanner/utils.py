@@ -38,25 +38,39 @@ def guess_category_name(merchant):
     merchant = (merchant or "").lower()
 
     category_map = {
-        "tesco": "Food",
-        "dunnes": "Food",
-        "lidl": "Food",
-        "aldi": "Food",
-        "supervalu": "Food",
+        "tesco": "Groceries",
+        "dunnes": "Groceries",
+        "lidl": "Groceries",
+        "aldi": "Groceries",
+        "supervalu": "Groceries",
+
         "amazon": "Shopping",
         "ebay": "Shopping",
         "nike": "Shopping",
         "zara": "Shopping",
+
         "uber": "Travel",
         "bolt": "Travel",
         "ryanair": "Travel",
         "aerlingus": "Travel",
+
         "boots": "Health",
         "pharmacy": "Health",
         "hospital": "Health",
+
         "electric": "Bills",
         "gas": "Bills",
         "internet": "Bills",
+
+        "restaurant": "Food",
+        "cafe": "Food",
+        "mcdonald": "Food",
+        "burger king": "Food",
+        "kfc": "Food",
+
+        "cinema": "Entertainment",
+        "netflix": "Entertainment",
+        "spotify": "Entertainment",
     }
 
     for key, value in category_map.items():

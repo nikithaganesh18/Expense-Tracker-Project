@@ -47,14 +47,21 @@ def upload_receipt(request):
                 receipt.date = extracted.get("date")
                 receipt.raw_text = extracted.get("raw_text", "")
 
-                category_name = extracted.get("category_name")
+                category_name = extracted.get("category_name", "Other")
                 category = Category.objects.filter(
                     user=request.user,
                     name=category_name
                 ).first()
-                receipt.category = category
 
+                if not category:
+                    category = Category.objects.filter(
+                        user=request.user,
+                        name="Other"
+                    ).first()
+
+                receipt.category = category
                 receipt.save()
+
                 return redirect("receipt_preview", pk=receipt.pk)
 
             except Exception as e:

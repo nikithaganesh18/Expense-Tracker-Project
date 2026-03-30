@@ -55,6 +55,36 @@
         </aside>
 
         <main class="main-content">
+            {% if messages %}
+                <div style="margin-bottom: 20px;">
+                    {% for message in messages %}
+                        <div
+                            style="
+                                padding: 12px 16px;
+                                border-radius: 10px;
+                                margin-bottom: 10px;
+                                font-weight: 600;
+                                {% if message.tags == 'error' %}
+                                    background: #ffe9e9;
+                                    color: #b00020;
+                                {% elif message.tags == 'success' %}
+                                    background: #e9fff1;
+                                    color: #0b7a3b;
+                                {% elif message.tags == 'warning' %}
+                                    background: #fff7e6;
+                                    color: #9a6700;
+                                {% else %}
+                                    background: #eef4ff;
+                                    color: #1f4b99;
+                                {% endif %}
+                            "
+                        >
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
             {% block content %}{% endblock %}
         </main>
     </div>
@@ -560,3 +590,4 @@
     </script>
 </body>
 </html>
+make the changes and give me the full updated code

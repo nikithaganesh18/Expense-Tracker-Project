@@ -18,7 +18,7 @@ def upload_receipt(request):
 
             if not uploaded_file:
                 messages.error(request, "Please choose a receipt file.")
-                return redirect("upload_receipt")
+                return render(request, "receipt_scanner/upload_receipt.html", {"form": form})
 
             try:
                 file_bytes = uploaded_file.read()
@@ -59,7 +59,11 @@ def upload_receipt(request):
 
             except Exception as e:
                 messages.error(request, f"Receipt processing failed: {str(e)}")
-                return redirect("upload_receipt")
+                return render(request, "receipt_scanner/upload_receipt.html", {"form": form})
+        else:
+            messages.error(request, f"Form validation failed: {form.errors}")
+            return render(request, "receipt_scanner/upload_receipt.html", {"form": form})
+
     else:
         form = ReceiptUploadForm()
 
@@ -74,7 +78,6 @@ def receipt_preview(request, pk):
 
     if request.method == "POST":
         form = ReceiptConfirmForm(request.POST, user=request.user)
-
         if form.is_valid():
             Expense.objects.create(
                 user=request.user,

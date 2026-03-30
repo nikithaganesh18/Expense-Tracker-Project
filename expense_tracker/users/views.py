@@ -13,41 +13,39 @@ from budget.models import Budget
 
 
 def home_view(request):
-    return render(request, 'users/home.html')
+    return render(request, "users/home.html")
 
 
 def register_view(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = RegisterForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('login')
+            return redirect("login")
     else:
         form = RegisterForm()
 
-    return render(request, 'users/register.html', {'form': form})
+    return render(request, "users/register.html", {"form": form})
 
 
 def login_view(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
             user = form.get_user()
             login(request, user)
 
-            # ✅ Trigger welcome popup
-            request.session['show_welcome'] = True
-
-            return redirect('dashboard')
+            request.session["show_welcome"] = True
+            return redirect("dashboard")
     else:
         form = AuthenticationForm()
 
-    return render(request, 'users/login.html', {'form': form})
+    return render(request, "users/login.html", {"form": form})
 
 
 def logout_view(request):
     logout(request)
-    return redirect('login')
+    return redirect("login")
 
 
 @login_required
@@ -56,24 +54,24 @@ def dashboard_view(request):
     first_day_this_month = today.replace(day=1)
     last_month_last_day = first_day_this_month - timedelta(days=1)
 
-    # Current month expenses
+    # Current month expenses based on when they were added
     current_month_expenses = Expense.objects.filter(
         user=request.user,
-        date__year=today.year,
-        date__month=today.month
+        created_at__year=today.year,
+        created_at__month=today.month
     )
 
-    # Last month expenses
+    # Last month expenses based on when they were added
     last_month_expenses = Expense.objects.filter(
         user=request.user,
-        date__year=last_month_last_day.year,
-        date__month=last_month_last_day.month
+        created_at__year=last_month_last_day.year,
+        created_at__month=last_month_last_day.month
     )
 
     # Totals
-    this_month_total = current_month_expenses.aggregate(total=Sum('amount'))['total'] or 0
-    last_month_total = last_month_expenses.aggregate(total=Sum('amount'))['total'] or 0
-    all_time_total = Expense.objects.filter(user=request.user).aggregate(total=Sum('amount'))['total'] or 0
+    this_month_total = current_month_expenses.aggregate(total=Sum("amount"))["total"] or 0
+    last_month_total = last_month_expenses.aggregate(total=Sum("amount"))["total"] or 0
+    all_time_total = Expense.objects.filter(user=request.user).aggregate(total=Sum("amount"))["total"] or 0
     expense_count = current_month_expenses.count()
 
     # Budget
@@ -94,7 +92,7 @@ def dashboard_view(request):
     else:
         budget_used = "No budget"
 
-    # 📊 Monthly trend (last 6 months)
+    # Monthly trend (last 6 months) based on created_at
     monthly_labels = []
     monthly_data = []
 
@@ -108,23 +106,22 @@ def dashboard_view(request):
 
         total = Expense.objects.filter(
             user=request.user,
-            date__year=ref_year,
-            date__month=ref_month
-        ).aggregate(total=Sum('amount'))['total'] or 0
+            created_at__year=ref_year,
+            created_at__month=ref_month
+        ).aggregate(total=Sum("amount"))["total"] or 0
 
         monthly_labels.append(f"{month_abbr[ref_month]} '{str(ref_year)[-2:]}")
         monthly_data.append(float(total))
 
-    # 📊 Category breakdown
-    category_expenses = current_month_expenses.values('category__name').annotate(
-        total=Sum('amount')
-    ).order_by('-total')
+    # Category breakdown for current month based on created_at
+    category_expenses = current_month_expenses.values("category__name").annotate(
+        total=Sum("amount")
+    ).order_by("-total")
 
-    category_labels = [item['category__name'] for item in category_expenses]
-    category_data = [float(item['total']) for item in category_expenses]
+    category_labels = [item["category__name"] or "Uncategorized" for item in category_expenses]
+    category_data = [float(item["total"]) for item in category_expenses]
 
-    # ✅ Show welcome popup only once
-    show_welcome = request.session.pop('show_welcome', False)
+    show_welcome = request.session.pop("show_welcome", False)
 
     context = {
         "this_month": this_month_total,

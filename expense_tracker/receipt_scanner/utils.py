@@ -97,51 +97,6 @@ def _clean_money_string(value):
     return value.replace(",", "").replace("€", "").replace("$", "").strip()
 
 
-def extract_text_from_pdf_bytes(file_bytes):
-    text_chunks = []
-
-    # Try direct text extraction first
-    try:
-        from PyPDF2 import PdfReader
-
-        reader = PdfReader(BytesIO(file_bytes))
-        for page in reader.pages:
-            page_text = page.extract_text() or ""
-            if page_text.strip():
-                text_chunks.append(page_text)
-    except Exception:
-        pass
-
-    direct_text = "\n".join(text_chunks).strip()
-    if direct_text:
-        return direct_text
-
-    # Fallback 1: PyMuPDF render first page to image and OCR it
-    try:
-        import fitz  # PyMuPDF
-
-        doc = fitz.open(stream=file_bytes, filetype="pdf")
-        if len(doc) > 0:
-            page = doc[0]
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            image = Image.open(BytesIO(pix.tobytes("png"))).convert("RGB")
-            return extract_text_with_rapidocr_from_pil(image)
-    except Exception:
-        pass
-
-    # Fallback 2: pdf2image render first page to image and OCR it
-    try:
-        from pdf2image import convert_from_bytes
-
-        pages = convert_from_bytes(file_bytes, first_page=1, last_page=1)
-        if pages:
-            return extract_text_with_rapidocr_from_pil(pages[0].convert("RGB"))
-    except Exception:
-        pass
-
-    return ""
-
-
 def preprocess_image_for_ocr(file_bytes):
     import numpy as np
     import cv2
@@ -159,6 +114,32 @@ def preprocess_pil_image_for_ocr(image):
     img_np = np.array(image.convert("RGB"))
     img_bgr = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
     return img_bgr
+
+
+def extract_text_with_rapidocr(file_bytes):
+    try:
+        from rapidocr_onnxruntime import RapidOCR
+    except ImportError:
+        return ""
+
+    try:
+        img = preprocess_image_for_ocr(file_bytes)
+        ocr_engine = RapidOCR()
+        result, _ = ocr_engine(img)
+
+        if not result:
+            return ""
+
+        lines = []
+        for item in result:
+            if len(item) >= 2:
+                text = str(item[1]).strip()
+                if text:
+                    lines.append(text)
+
+        return "\n".join(lines)
+    except Exception:
+        return ""
 
 
 def extract_text_with_rapidocr_from_pil(image):
@@ -187,30 +168,53 @@ def extract_text_with_rapidocr_from_pil(image):
         return ""
 
 
-def extract_text_with_rapidocr(file_bytes):
+def extract_text_from_pdf_bytes(file_bytes):
+    text_chunks = []
+
+    # 1. Try direct text extraction
     try:
-        from rapidocr_onnxruntime import RapidOCR
-    except ImportError:
-        return ""
+        from PyPDF2 import PdfReader
 
-    try:
-        img = preprocess_image_for_ocr(file_bytes)
-        ocr_engine = RapidOCR()
-        result, _ = ocr_engine(img)
-
-        if not result:
-            return ""
-
-        lines = []
-        for item in result:
-            if len(item) >= 2:
-                text = str(item[1]).strip()
-                if text:
-                    lines.append(text)
-
-        return "\n".join(lines)
+        reader = PdfReader(BytesIO(file_bytes))
+        for page in reader.pages:
+            page_text = page.extract_text() or ""
+            if page_text.strip():
+                text_chunks.append(page_text)
     except Exception:
-        return ""
+        pass
+
+    direct_text = "\n".join(text_chunks).strip()
+    if direct_text:
+        return direct_text
+
+    # 2. Fallback: render first page with PyMuPDF and OCR it
+    try:
+        import fitz  # PyMuPDF
+
+        doc = fitz.open(stream=file_bytes, filetype="pdf")
+        if len(doc) > 0:
+            page = doc[0]
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
+            image = Image.open(BytesIO(pix.tobytes("png"))).convert("RGB")
+            ocr_text = extract_text_with_rapidocr_from_pil(image)
+            if ocr_text.strip():
+                return ocr_text
+    except Exception:
+        pass
+
+    # 3. Fallback: pdf2image + OCR
+    try:
+        from pdf2image import convert_from_bytes
+
+        pages = convert_from_bytes(file_bytes, first_page=1, last_page=1)
+        if pages:
+            ocr_text = extract_text_with_rapidocr_from_pil(pages[0].convert("RGB"))
+            if ocr_text.strip():
+                return ocr_text
+    except Exception:
+        pass
+
+    return ""
 
 
 def extract_raw_text(file_bytes, original_name):
@@ -255,6 +259,7 @@ def extract_merchant(lines, original_name, raw_text=""):
         "pay by",
         "receipt",
         "tax invoice",
+        "full details of your account",
     ]
 
     for line in lines[:10]:

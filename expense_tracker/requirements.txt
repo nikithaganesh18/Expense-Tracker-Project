@@ -7,7 +7,10 @@ jmespath==1.1.0
 numpy==2.0.2
 opencv-python-headless==4.12.0.88
 packaging==26.0
+pdf2image==1.17.0
 Pillow==11.3.0
+PyMuPDF==1.26.4
+PyPDF2==3.0.1
 python-dateutil==2.9.0.post0
 python-dotenv
 rapidocr-onnxruntime==1.4.4

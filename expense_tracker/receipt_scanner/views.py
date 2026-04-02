@@ -1,8 +1,8 @@
 from decimal import Decimal, InvalidOperation
 
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.utils import timezone
 
 from categories.models import Category
@@ -47,12 +47,12 @@ def upload_receipt(request):
                 )
 
                 merchant = extracted.get("merchant") or "Unknown Merchant"
-                raw_amount = extracted.get("amount", 0)
+                raw_amount = extracted.get("amount") or Decimal("0.00")
                 receipt_date = extracted.get("date") or timezone.localdate()
                 raw_text = extracted.get("raw_text", "")
 
                 try:
-                    amount = Decimal(str(raw_amount or 0))
+                    amount = Decimal(str(raw_amount))
                 except (InvalidOperation, TypeError, ValueError):
                     amount = Decimal("0.00")
 
@@ -75,6 +75,14 @@ def upload_receipt(request):
 
                 receipt.category = category
                 receipt.save()
+
+                # If OCR failed, do not save a bad 0.00 expense
+                if amount <= 0:
+                    messages.error(
+                        request,
+                        "Receipt text could not be extracted correctly. Please review and enter the details manually."
+                    )
+                    return redirect("receipt_preview", pk=receipt.pk)
 
                 Expense.objects.create(
                     user=request.user,

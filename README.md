@@ -28,12 +28,12 @@ Image upload receipt image OCR-based extraction Secure storage with the help of 
 
 Technology Stack
 
-Backend: Python (Django)
-Frontend HTML, CSS (Django Templates)
-Database: SQLite
-Cloud: AWS EC2, AWS S3
-Development Environment: AWS Cloud9  
-Version Control: GitHub
+Backend - Python (Django)
+Frontend - HTML, CSS (Django Templates)
+Database - SQLite
+Cloud - AWS EC2, AWS S3
+Development Environment - AWS Cloud9  
+Version Control - GitHub
 
 DevSecOps Implementation
 

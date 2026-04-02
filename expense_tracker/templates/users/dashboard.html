@@ -26,7 +26,7 @@
             <span class="stat-heading">THIS MONTH</span>
             <span class="stat-mini-icon">$</span>
         </div>
-        <h2 class="stat-value">{{ this_month }}</h2>
+        <h2 class="stat-value">{{ this_month|floatformat:-2 }}</h2>
         <p class="stat-subtext">{{ expense_count }} expenses</p>
     </div>
 
@@ -35,7 +35,7 @@
             <span class="stat-heading">LAST MONTH</span>
             <span class="stat-mini-icon">↘</span>
         </div>
-        <h2 class="stat-value">{{ last_month }}</h2>
+        <h2 class="stat-value">{{ last_month|floatformat:-2 }}</h2>
         <p class="stat-subtext">&nbsp;</p>
     </div>
 
@@ -44,7 +44,9 @@
             <span class="stat-heading">BUDGET USED</span>
             <span class="stat-mini-icon">▣</span>
         </div>
-        <h2 class="stat-value budget-text">{{ budget_used }}</h2>
+        <h2 class="stat-value budget-text">
+            {{ budget_used_amount|floatformat:2 }} / {{ budget_amount|floatformat:2 }}
+        </h2>
         <p class="stat-subtext">Current month budget status</p>
     </div>
 
@@ -53,7 +55,7 @@
             <span class="stat-heading">ALL TIME</span>
             <span class="stat-mini-icon">$</span>
         </div>
-        <h2 class="stat-value">{{ all_time }}</h2>
+        <h2 class="stat-value">{{ all_time|floatformat:-2 }}</h2>
         <p class="stat-subtext">&nbsp;</p>
     </div>
 </div>
@@ -83,15 +85,15 @@
 
     {% if budget_amount %}
         <div class="budget-progress-top">
-            <span class="budget-progress-text">{{ budget_used_amount }} used</span>
-            <span class="budget-progress-text">Budget {{ budget_amount }}</span>
+            <span class="budget-progress-text">{{ budget_used_amount|floatformat:2 }} used</span>
+            <span class="budget-progress-text">Budget {{ budget_amount|floatformat:2 }}</span>
         </div>
 
         <div class="budget-progress-bar">
             <div class="budget-progress-fill" style="width: {{ budget_percentage }}%;"></div>
         </div>
 
-        <p class="stat-subtext" style="margin-top: 14px;">{{ budget_percentage }}% of this month's budget used</p>
+        <p class="stat-subtext" style="margin-top: 14px;">{{ budget_percentage|floatformat:1 }}% of this month's budget used</p>
     {% else %}
         <div class="empty-state" style="height: 120px;">No budget set for this month</div>
     {% endif %}

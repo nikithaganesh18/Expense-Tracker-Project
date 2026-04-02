@@ -1,6 +1,10 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from decimal import Decimal, InvalidOperation
+
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+
 from categories.models import Category
 from expenses.models import Expense
 from .models import ReceiptUpload
@@ -42,27 +46,50 @@ def upload_receipt(request):
                     original_name=original_name,
                 )
 
-                receipt.merchant = extracted.get("merchant", "Unknown Merchant")
-                receipt.amount = extracted.get("amount", 0)
-                receipt.date = extracted.get("date")
-                receipt.raw_text = extracted.get("raw_text", "")
+                merchant = extracted.get("merchant") or "Unknown Merchant"
+                raw_amount = extracted.get("amount", 0)
+                receipt_date = extracted.get("date") or timezone.localdate()
+                raw_text = extracted.get("raw_text", "")
 
-                category_name = extracted.get("category_name", "Other")
+                try:
+                    amount = Decimal(str(raw_amount or 0))
+                except (InvalidOperation, TypeError, ValueError):
+                    amount = Decimal("0.00")
+
+                receipt.merchant = merchant
+                receipt.amount = amount
+                receipt.date = receipt_date
+                receipt.raw_text = raw_text
+
+                category_name = extracted.get("category_name") or "Other"
                 category = Category.objects.filter(
                     user=request.user,
                     name=category_name
                 ).first()
 
                 if not category:
-                    category = Category.objects.filter(
+                    category, _ = Category.objects.get_or_create(
                         user=request.user,
                         name="Other"
-                    ).first()
+                    )
 
                 receipt.category = category
                 receipt.save()
 
-                return redirect("receipt_preview", pk=receipt.pk)
+                Expense.objects.create(
+                    user=request.user,
+                    title=merchant,
+                    amount=amount,
+                    category=category,
+                    date=receipt_date,
+                    description=f"Imported from receipt: {merchant}",
+                )
+
+                messages.success(
+                    request,
+                    f"Receipt uploaded successfully. Expense of {amount:.2f} added."
+                )
+                return redirect("expense_list")
 
             except Exception as e:
                 messages.error(request, f"Receipt processing failed: {str(e)}")

@@ -1,4 +1,4 @@
-Cloud-Based Expense Tracker
+Expense Tracker
 Overview
 
 Cloud-Based Expense Tracker is a DevOpsSec web application developed using Django and deployed on AWS EC2. It also enables users to have a centralized system to control daily expenses, spending patterns and budgets effectively. The system enables anyone to add expenses, classify them, and see the financial insights with the help of a dashboard.
